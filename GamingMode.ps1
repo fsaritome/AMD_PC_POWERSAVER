@@ -2,28 +2,32 @@
 <#
 .SYNOPSIS
     GAMING MEGA MODE - Maximum performance, all limits removed
-    Restores full CPU boost, disables power saving, re-enables NICs if needed
 .DESCRIPTION
-    - Re-enables Intel X520-2 10GbE NICs (if you need them)
-    - CPU max state 100% (full Precision Boost to 4.8GHz)
-    - CPU min state 100% (all cores stay at max - prevents frametime spikes)
-    - SMU: Restores stock PPT=142W, TDC=95A, EDC=140A, HTC=90C
-    - GPU: Reset to factory defaults (full boost 2514MHz, 1175mV) via ADLX
-    - Core parking disabled (all cores active)
-    - PCIe ASPM off (no link power saving = lowest latency)
-    - USB selective suspend disabled (no input device dropouts)
-    - HDD spin-down disabled (no stutter from HDD wake)
-    - Display timeout disabled (no screen off mid-session)
+    All tuning values are loaded from config.json (copy config.example.json to get started).
+    - Re-enables NICs matching configured pattern (only with -EnableX520 flag)
+    - CPU max/min state to configured gaming values (full boost)
+    - SMU: Restores stock PPT/TDC/EDC/HTC via ZenControl
+    - GPU: Reset to factory defaults via GpuControl
+    - Core parking disabled, ASPM off, USB suspend off, no timeouts
 .NOTES
     Run as Administrator. Revert with PowerSaver.ps1
 #>
 
 param(
-    [string]$NetioHost = "192.168.178.118",
-    [string]$NetioUser = "netio",
-    [string]$NetioPass = "netio",
+    [string]$ConfigPath = "$PSScriptRoot\config.json",
     [switch]$EnableX520
 )
+
+# --- Load config ---
+if (-not (Test-Path $ConfigPath)) {
+    Write-Host "[ERROR] config.json not found at $ConfigPath" -ForegroundColor Red
+    Write-Host "        Copy config.example.json to config.json and fill in your values." -ForegroundColor Yellow
+    exit 1
+}
+$cfg = Get-Content $ConfigPath -Raw | ConvertFrom-Json
+$netio = $cfg.netio
+$hw = $cfg.hardware
+$g = $cfg.profiles.gamingMode
 
 $ErrorActionPreference = "Continue"
 Write-Host ""
@@ -33,43 +37,48 @@ Write-Host "========================================" -ForegroundColor Red
 Write-Host ""
 
 # --- Read BEFORE power ---
-try {
-    $cred = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${NetioUser}:${NetioPass}"))
-    $before = Invoke-RestMethod -Uri "http://${NetioHost}/netio.json" -Headers @{Authorization="Basic $cred"}
-    $pcBefore = ($before.Outputs | Where-Object { $_.Name -eq "PC RIG" }).Load
-    Write-Host "[NETIO] Current power: ${pcBefore}W" -ForegroundColor Cyan
-} catch {
-    Write-Host "[NETIO] Could not read power socket (offline?)" -ForegroundColor Yellow
-    $pcBefore = $null
+$pcBefore = $null
+$cred = $null
+if ($netio.host) {
+    try {
+        $cred = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$($netio.user):$($netio.pass)"))
+        $before = Invoke-RestMethod -Uri "http://$($netio.host)/netio.json" -Headers @{Authorization="Basic $cred"}
+        $pcBefore = ($before.Outputs | Where-Object { $_.Name -eq $netio.outputName }).Load
+        Write-Host "[NETIO] Current power: ${pcBefore}W" -ForegroundColor Cyan
+    } catch {
+        Write-Host "[NETIO] Could not read power socket (offline?)" -ForegroundColor Yellow
+    }
+} else {
+    Write-Host "[NETIO] Not configured (set netio.host in config.json)" -ForegroundColor DarkGray
 }
 
-# --- 1. Re-enable Intel X520-2 (only with -EnableX520 flag) ---
-if ($EnableX520) {
-    Write-Host "[NIC]   Re-enabling Intel X520-2 10GbE adapters..." -ForegroundColor White
-    $x520 = Get-NetAdapter | Where-Object { $_.InterfaceDescription -like "*X520*" -and $_.Status -eq "Disabled" }
-    if ($x520) {
-        $x520 | Enable-NetAdapter -Confirm:$false
-        Write-Host "        Enabled $($x520.Count) adapter(s)" -ForegroundColor Green
+# --- 1. Re-enable NICs (only with -EnableX520 flag) ---
+if ($EnableX520 -and $hw.nicPattern) {
+    Write-Host "[NIC]   Re-enabling adapters matching '$($hw.nicPattern)'..." -ForegroundColor White
+    $nics = Get-NetAdapter | Where-Object { $_.InterfaceDescription -like $hw.nicPattern -and $_.Status -eq "Disabled" }
+    if ($nics) {
+        $nics | Enable-NetAdapter -Confirm:$false
+        Write-Host "        Enabled $($nics.Count) adapter(s)" -ForegroundColor Green
     } else {
         Write-Host "        Already enabled or not found" -ForegroundColor DarkGray
     }
 } else {
-    Write-Host "[NIC]   X520-2 stays disabled (use -EnableX520 to re-enable, +31W)" -ForegroundColor DarkGray
+    Write-Host "[NIC]   NICs stay disabled (use -EnableX520 to re-enable)" -ForegroundColor DarkGray
 }
 
-# --- 2. CPU: Full boost unlocked, min state 100% (park no cores) ---
-Write-Host "[CPU]   Unlocking full boost (100% max), pinning min to 100%..." -ForegroundColor White
-powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMAX 100
-powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 100
+# --- 2. CPU: Full boost, min state to configured values ---
+Write-Host "[CPU]   Unlocking full boost ($($g.cpuMax)% max), pinning min to $($g.cpuMin)%..." -ForegroundColor White
+powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMAX $g.cpuMax
+powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN $g.cpuMin
 
-# --- 2b. SMU: Restore stock PPT/TDC/EDC limits via ZenControl ---
+# --- 2b. SMU: Restore stock PPT/TDC/EDC/HTC via ZenControl ---
 $zenExe = "$PSScriptRoot\ZenControl\bin\Release\net8.0-windows\ZenControl.exe"
 if (Test-Path $zenExe) {
-    Write-Host "[SMU]   Restoring stock PPT=142W, TDC=95A, EDC=140A, HTC=90C..." -ForegroundColor White
-    & $zenExe ppt 142 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
-    & $zenExe tdc 95 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
-    & $zenExe edc 140 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
-    & $zenExe htc 90 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
+    Write-Host "[SMU]   Restoring PPT=$($g.ppt)W, TDC=$($g.tdc)A, EDC=$($g.edc)A, HTC=$($g.htc)C..." -ForegroundColor White
+    & $zenExe ppt $g.ppt 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
+    & $zenExe tdc $g.tdc 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
+    & $zenExe edc $g.edc 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
+    & $zenExe htc $g.htc 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
 } else {
     Write-Host "[SMU]   ZenControl not found at $zenExe - skipping SMU restore" -ForegroundColor Yellow
 }
@@ -83,10 +92,10 @@ if (Test-Path $gpuExe) {
     Write-Host "[GPU]   GpuControl not found at $gpuExe - skipping GPU reset" -ForegroundColor Yellow
 }
 
-# --- 2d. Core parking: Disabled (all cores active) ---
-Write-Host "[PARK]  Disabling core parking (all cores active)..." -ForegroundColor White
-powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR CPMAXCORES 100
-powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR CPMINCORES 100
+# --- 2d. Core parking: Disabled ---
+Write-Host "[PARK]  Setting core parking (max $($g.coreParkMax)%, min $($g.coreParkMin)%)..." -ForegroundColor White
+powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR CPMAXCORES $g.coreParkMax
+powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR CPMINCORES $g.coreParkMin
 
 # --- 3. PCIe ASPM: Off (lowest latency) ---
 Write-Host "[PCIe]  Disabling ASPM (lowest latency)..." -ForegroundColor White
@@ -113,8 +122,8 @@ Write-Host "[OK]    All settings applied!" -ForegroundColor Green
 if ($pcBefore) {
     Start-Sleep -Seconds 5
     try {
-        $after = Invoke-RestMethod -Uri "http://${NetioHost}/netio.json" -Headers @{Authorization="Basic $cred"}
-        $pcAfter = ($after.Outputs | Where-Object { $_.Name -eq "PC RIG" }).Load
+        $after = Invoke-RestMethod -Uri "http://$($netio.host)/netio.json" -Headers @{Authorization="Basic $cred"}
+        $pcAfter = ($after.Outputs | Where-Object { $_.Name -eq $netio.outputName }).Load
         $diff = $pcAfter - $pcBefore
         Write-Host ""
         Write-Host "========================================" -ForegroundColor Red

@@ -2,27 +2,31 @@
 <#
 .SYNOPSIS
     POWER SAVER MODE - Max power savings for normal work (coding, browsing, etc.)
-    Estimated savings: ~55-75W from wall vs stock settings
 .DESCRIPTION
-    - Disables unused Intel X520-2 10GbE NICs (~31W savings)
-    - Caps CPU to 99% (disables boost, ~15W savings)
-    - Sets CPU min state to 5% (deeper idle)
-    - SMU: PPT=45W, TDC=35A, EDC=50A, HTC=70C (firmware-level power cap)
-    - GPU: Max 1000MHz, 825mV, power limit -10% via ADLX (~14W savings)
-    - Aggressive core parking (50% max cores)
-    - PCIe ASPM to maximum power savings
-    - USB selective suspend enabled
-    - HDD spin-down after 3 minutes
-    - Display off after 5 minutes
+    All tuning values are loaded from config.json (copy config.example.json to get started).
+    - Disables NICs matching configured pattern
+    - Caps CPU max/min state (disables boost)
+    - SMU: Sets PPT/TDC/EDC/HTC limits via ZenControl
+    - GPU: Sets power limit, max frequency, voltage via GpuControl
+    - Aggressive core parking, ASPM max, USB suspend, HDD/display timeouts
 .NOTES
     Run as Administrator. Revert with GamingMode.ps1
 #>
 
 param(
-    [string]$NetioHost = "192.168.178.118",
-    [string]$NetioUser = "netio",
-    [string]$NetioPass = "netio"
+    [string]$ConfigPath = "$PSScriptRoot\config.json"
 )
+
+# --- Load config ---
+if (-not (Test-Path $ConfigPath)) {
+    Write-Host "[ERROR] config.json not found at $ConfigPath" -ForegroundColor Red
+    Write-Host "        Copy config.example.json to config.json and fill in your values." -ForegroundColor Yellow
+    exit 1
+}
+$cfg = Get-Content $ConfigPath -Raw | ConvertFrom-Json
+$netio = $cfg.netio
+$hw = $cfg.hardware
+$p = $cfg.profiles.powerSaver
 
 $ErrorActionPreference = "Continue"
 Write-Host ""
@@ -32,39 +36,48 @@ Write-Host "========================================" -ForegroundColor Green
 Write-Host ""
 
 # --- Read BEFORE power ---
-try {
-    $cred = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${NetioUser}:${NetioPass}"))
-    $before = Invoke-RestMethod -Uri "http://${NetioHost}/netio.json" -Headers @{Authorization="Basic $cred"}
-    $pcBefore = ($before.Outputs | Where-Object { $_.Name -eq "PC RIG" }).Load
-    Write-Host "[NETIO] Current power: ${pcBefore}W" -ForegroundColor Cyan
-} catch {
-    Write-Host "[NETIO] Could not read power socket (offline?)" -ForegroundColor Yellow
-    $pcBefore = $null
-}
-
-# --- 1. Disable Intel X520-2 10GbE NICs ---
-Write-Host "[NIC]   Disabling Intel X520-2 10GbE adapters..." -ForegroundColor White
-$x520 = Get-NetAdapter | Where-Object { $_.InterfaceDescription -like "*X520*" -and $_.Status -ne "Disabled" }
-if ($x520) {
-    $x520 | Disable-NetAdapter -Confirm:$false
-    Write-Host "        Disabled $($x520.Count) adapter(s)" -ForegroundColor Green
+$pcBefore = $null
+$cred = $null
+if ($netio.host) {
+    try {
+        $cred = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("$($netio.user):$($netio.pass)"))
+        $before = Invoke-RestMethod -Uri "http://$($netio.host)/netio.json" -Headers @{Authorization="Basic $cred"}
+        $pcBefore = ($before.Outputs | Where-Object { $_.Name -eq $netio.outputName }).Load
+        Write-Host "[NETIO] Current power: ${pcBefore}W" -ForegroundColor Cyan
+    } catch {
+        Write-Host "[NETIO] Could not read power socket (offline?)" -ForegroundColor Yellow
+    }
 } else {
-    Write-Host "        Already disabled or not found" -ForegroundColor DarkGray
+    Write-Host "[NETIO] Not configured (set netio.host in config.json)" -ForegroundColor DarkGray
 }
 
-# --- 2. CPU: Cap to 99% (no boost), min state 5% ---
-Write-Host "[CPU]   Capping max to 99% (no boost), min to 5%..." -ForegroundColor White
-powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMAX 99
-powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN 5
+# --- 1. Disable NICs matching pattern ---
+if ($hw.nicPattern) {
+    Write-Host "[NIC]   Disabling adapters matching '$($hw.nicPattern)'..." -ForegroundColor White
+    $nics = Get-NetAdapter | Where-Object { $_.InterfaceDescription -like $hw.nicPattern -and $_.Status -ne "Disabled" }
+    if ($nics) {
+        $nics | Disable-NetAdapter -Confirm:$false
+        Write-Host "        Disabled $($nics.Count) adapter(s)" -ForegroundColor Green
+    } else {
+        Write-Host "        Already disabled or not found" -ForegroundColor DarkGray
+    }
+} else {
+    Write-Host "[NIC]   No NIC pattern configured - skipping" -ForegroundColor DarkGray
+}
 
-# --- 2b. SMU: Set aggressive PPT/TDC/EDC limits via ZenControl ---
+# --- 2. CPU: Cap max/min state ---
+Write-Host "[CPU]   Capping max to $($p.cpuMax)%, min to $($p.cpuMin)%..." -ForegroundColor White
+powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMAX $p.cpuMax
+powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN $p.cpuMin
+
+# --- 2b. SMU: Set PPT/TDC/EDC/HTC limits via ZenControl ---
 $zenExe = "$PSScriptRoot\ZenControl\bin\Release\net8.0-windows\ZenControl.exe"
 if (Test-Path $zenExe) {
-    Write-Host "[SMU]   Setting PPT=45W, TDC=35A, EDC=50A, HTC=70C via SMU..." -ForegroundColor White
-    & $zenExe ppt 45 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
-    & $zenExe tdc 35 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
-    & $zenExe edc 50 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
-    & $zenExe htc 70 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
+    Write-Host "[SMU]   Setting PPT=$($p.ppt)W, TDC=$($p.tdc)A, EDC=$($p.edc)A, HTC=$($p.htc)C via SMU..." -ForegroundColor White
+    & $zenExe ppt $p.ppt 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
+    & $zenExe tdc $p.tdc 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
+    & $zenExe edc $p.edc 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
+    & $zenExe htc $p.htc 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
 } else {
     Write-Host "[SMU]   ZenControl not found at $zenExe - skipping SMU limits" -ForegroundColor Yellow
 }
@@ -72,18 +85,18 @@ if (Test-Path $zenExe) {
 # --- 2c. GPU: Downclock + undervolt via GpuControl (ADLX) ---
 $gpuExe = "$PSScriptRoot\GpuControl\GpuControl.exe"
 if (Test-Path $gpuExe) {
-    Write-Host "[GPU]   Setting max 1000MHz, 825mV, power limit -10% via ADLX..." -ForegroundColor White
-    & $gpuExe powerlimit -10 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
-    & $gpuExe maxfreq 1000 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
-    & $gpuExe voltage 825 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
+    Write-Host "[GPU]   Setting power limit $($p.gpuPowerLimit)%, max $($p.gpuMaxFreq)MHz, $($p.gpuVoltage)mV via ADLX..." -ForegroundColor White
+    & $gpuExe powerlimit $p.gpuPowerLimit 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
+    & $gpuExe maxfreq $p.gpuMaxFreq 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
+    & $gpuExe voltage $p.gpuVoltage 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
 } else {
     Write-Host "[GPU]   GpuControl not found at $gpuExe - skipping GPU limits" -ForegroundColor Yellow
 }
 
-# --- 2d. Core parking: Aggressive (50% max cores) ---
-Write-Host "[PARK]  Setting aggressive core parking (50% max cores)..." -ForegroundColor White
-powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR CPMAXCORES 50
-powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR CPMINCORES 5
+# --- 2d. Core parking ---
+Write-Host "[PARK]  Setting core parking (max $($p.coreParkMax)%, min $($p.coreParkMin)%)..." -ForegroundColor White
+powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR CPMAXCORES $p.coreParkMax
+powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR CPMINCORES $p.coreParkMin
 
 # --- 3. PCIe ASPM: Maximum power savings ---
 Write-Host "[PCIe]  Setting ASPM to maximum savings..." -ForegroundColor White
@@ -110,8 +123,8 @@ Write-Host "[OK]    All settings applied!" -ForegroundColor Green
 if ($pcBefore) {
     Start-Sleep -Seconds 5
     try {
-        $after = Invoke-RestMethod -Uri "http://${NetioHost}/netio.json" -Headers @{Authorization="Basic $cred"}
-        $pcAfter = ($after.Outputs | Where-Object { $_.Name -eq "PC RIG" }).Load
+        $after = Invoke-RestMethod -Uri "http://$($netio.host)/netio.json" -Headers @{Authorization="Basic $cred"}
+        $pcAfter = ($after.Outputs | Where-Object { $_.Name -eq $netio.outputName }).Load
         $saved = $pcBefore - $pcAfter
         Write-Host ""
         Write-Host "========================================" -ForegroundColor Green

@@ -14,7 +14,9 @@ public partial class MainWindow : Window
 {
     private readonly HttpClient _http = new() { Timeout = TimeSpan.FromSeconds(3) };
     private readonly DispatcherTimer _timer;
-    private readonly string _scriptDir;
+    private readonly string _projectDir;
+    private readonly string _configPath;
+    private AppConfig _config = new();
     private string? _activeProfile;
 
     private static readonly SolidColorBrush GreenBrush = new(Color.FromRgb(0x00, 0xC8, 0x53));
@@ -29,12 +31,16 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        // Script directory = parent of ProfileSwitcher/
-        _scriptDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, ".."));
+        // Project directory = parent of ProfileSwitcher/
+        _projectDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, ".."));
+        _configPath = Path.Combine(_projectDir, "config.json");
+
+        LoadConfig();
 
         // Wire up buttons
         btnPowerSaver.Click += async (_, _) => await ApplyProfile("PowerSaver.ps1", "PowerSaver");
         btnGamingMode.Click += async (_, _) => await ApplyProfile("GamingMode.ps1", "GamingMode");
+        btnSettings.Click += (_, _) => OpenSettings();
 
         // NETIO poll timer (every 5 seconds)
         _timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
@@ -45,14 +51,51 @@ public partial class MainWindow : Window
         Loaded += async (_, _) => await RefreshPower();
     }
 
+    private void LoadConfig()
+    {
+        _config = AppConfig.Load(_configPath);
+        UpdateDisplayFromConfig();
+    }
+
+    private void UpdateDisplayFromConfig()
+    {
+        txtHardware.Text = $"{_config.Hardware.Cpu}  ·  {_config.Hardware.Gpu}";
+        txtPsDetails.Text = _config.Profiles.PowerSaver.SummaryLine;
+        txtGmDetails.Text = _config.Profiles.GamingMode.SummaryLine;
+
+        if (string.IsNullOrWhiteSpace(_config.Netio.Host))
+        {
+            txtPower.Text = "---";
+            txtPowerLabel.Text = "NETIO not configured (open Settings)";
+        }
+    }
+
+    private void OpenSettings()
+    {
+        var dlg = new SettingsWindow(_config) { Owner = this };
+        dlg.ShowDialog();
+        if (dlg.Saved)
+        {
+            _config = dlg.Config;
+            _config.Save(_configPath);
+            UpdateDisplayFromConfig();
+            SetStatus("Settings saved to config.json", GreenBrush);
+        }
+    }
+
     private async Task RefreshPower()
     {
+        if (string.IsNullOrWhiteSpace(_config.Netio.Host))
+            return;
+
         try
         {
-            var authBytes = System.Text.Encoding.ASCII.GetBytes("netio:netio");
+            var authBytes = System.Text.Encoding.ASCII.GetBytes(
+                $"{_config.Netio.User}:{_config.Netio.Pass}");
             var authHeader = Convert.ToBase64String(authBytes);
 
-            using var request = new HttpRequestMessage(HttpMethod.Get, "http://192.168.178.118/netio.json");
+            using var request = new HttpRequestMessage(HttpMethod.Get,
+                $"http://{_config.Netio.Host}/netio.json");
             request.Headers.TryAddWithoutValidation("Authorization", $"Basic {authHeader}");
 
             var response = await _http.SendAsync(request);
@@ -65,17 +108,18 @@ public partial class MainWindow : Window
 
             foreach (var output in outputs.EnumerateArray())
             {
-                if (output.TryGetProperty("Name", out var name) && name.GetString() == "PC RIG")
+                if (output.TryGetProperty("Name", out var name) &&
+                    name.GetString() == _config.Netio.OutputName)
                 {
-                    watts = output.GetProperty("Current").GetDouble();
+                    watts = output.GetProperty("Load").GetDouble();
                     break;
                 }
             }
             if (watts == 0 && outputs.GetArrayLength() > 0)
-                watts = outputs[0].GetProperty("Current").GetDouble();
+                watts = outputs[0].GetProperty("Load").GetDouble();
 
             txtPower.Text = $"{watts:F1}W";
-            txtPowerLabel.Text = "live from NETIO 4KF";
+            txtPowerLabel.Text = "live from NETIO";
 
             // Color code: green < 100W, blue 100-130W, orange 130-180W, red > 180W
             txtPower.Foreground = watts switch
@@ -96,10 +140,10 @@ public partial class MainWindow : Window
 
     private async Task ApplyProfile(string scriptName, string label)
     {
-        var scriptPath = Path.Combine(_scriptDir, scriptName);
+        var scriptPath = Path.Combine(_projectDir, scriptName);
         if (!File.Exists(scriptPath))
         {
-            SetStatus($"{scriptName} not found in {_scriptDir}", RedBrush);
+            SetStatus($"{scriptName} not found in {_projectDir}", RedBrush);
             return;
         }
 
@@ -115,7 +159,7 @@ public partial class MainWindow : Window
                 var psi = new ProcessStartInfo
                 {
                     FileName = "pwsh.exe",
-                    Arguments = $"-NoProfile -ExecutionPolicy Bypass -File \"{scriptPath}\"",
+                    Arguments = $"-NoProfile -ExecutionPolicy Bypass -File \"{scriptPath}\" -ConfigPath \"{_configPath}\"",
                     Verb = "runas",
                     UseShellExecute = true,
                     WindowStyle = ProcessWindowStyle.Hidden

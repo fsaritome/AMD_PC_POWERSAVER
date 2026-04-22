@@ -1,0 +1,38 @@
+{
+  "netio": {
+    "host": "",
+    "user": "",
+    "pass": "",
+    "outputName": "PC RIG"
+  },
+  "hardware": {
+    "cpu": "AMD Ryzen CPU",
+    "gpu": "AMD Radeon GPU",
+    "nicPattern": ""
+  },
+  "profiles": {
+    "powerSaver": {
+      "cpuMax": 99,
+      "cpuMin": 5,
+      "ppt": 45,
+      "tdc": 35,
+      "edc": 50,
+      "htc": 70,
+      "gpuPowerLimit": -10,
+      "gpuMaxFreq": 1000,
+      "gpuVoltage": 825,
+      "coreParkMax": 50,
+      "coreParkMin": 5
+    },
+    "gamingMode": {
+      "cpuMax": 100,
+      "cpuMin": 100,
+      "ppt": 142,
+      "tdc": 95,
+      "edc": 140,
+      "htc": 90,
+      "coreParkMax": 100,
+      "coreParkMin": 100
+    }
+  }
+}

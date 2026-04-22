@@ -1,0 +1,168 @@
+<Window x:Class="ProfileSwitcher.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Settings"
+        Width="500" Height="620"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource BgBrush}">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- NETIO -->
+                <TextBlock Text="NETIO Power Socket" FontSize="14" FontWeight="Bold"
+                           Foreground="{StaticResource BlueBrush}" Margin="0,0,0,8"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="32"/>
+                        <RowDefinition Height="32"/>
+                        <RowDefinition Height="32"/>
+                        <RowDefinition Height="32"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="Host / IP" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="tbNetioHost" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="Username" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="tbNetioUser" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Password" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <PasswordBox Grid.Row="2" Grid.Column="1" x:Name="tbNetioPass" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Output Name" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="3" Grid.Column="1" x:Name="tbNetioOutput" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+                </Grid>
+
+                <!-- Hardware -->
+                <TextBlock Text="Hardware" FontSize="14" FontWeight="Bold"
+                           Foreground="{StaticResource BlueBrush}" Margin="0,16,0,8"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="32"/>
+                        <RowDefinition Height="32"/>
+                        <RowDefinition Height="32"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="CPU" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="tbCpu" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="GPU" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="tbGpu" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="NIC Pattern" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="2" Grid.Column="1" x:Name="tbNicPattern" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+                </Grid>
+
+                <!-- PowerSaver Profile -->
+                <TextBlock Text="PowerSaver Profile" FontSize="14" FontWeight="Bold"
+                           Foreground="{StaticResource GreenBrush}" Margin="0,16,0,8"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="32"/>
+                        <RowDefinition Height="32"/>
+                        <RowDefinition Height="32"/>
+                        <RowDefinition Height="32"/>
+                        <RowDefinition Height="32"/>
+                        <RowDefinition Height="32"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="CPU Max %" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="tbPsCpuMax" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+                    <TextBlock Grid.Row="0" Grid.Column="3" Text="CPU Min %" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="0" Grid.Column="4" x:Name="tbPsCpuMin" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="PPT (W)" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="tbPsPpt" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+                    <TextBlock Grid.Row="1" Grid.Column="3" Text="TDC (A)" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="1" Grid.Column="4" x:Name="tbPsTdc" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="EDC (A)" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="2" Grid.Column="1" x:Name="tbPsEdc" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+                    <TextBlock Grid.Row="2" Grid.Column="3" Text="HTC (°C)" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="2" Grid.Column="4" x:Name="tbPsHtc" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="GPU Power %" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="3" Grid.Column="1" x:Name="tbPsGpuPower" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+                    <TextBlock Grid.Row="3" Grid.Column="3" Text="GPU Freq (MHz)" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="3" Grid.Column="4" x:Name="tbPsGpuFreq" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+
+                    <TextBlock Grid.Row="4" Grid.Column="0" Text="GPU mV" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="4" Grid.Column="1" x:Name="tbPsGpuVolt" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+
+                    <TextBlock Grid.Row="5" Grid.Column="0" Text="Park Max %" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="5" Grid.Column="1" x:Name="tbPsParkMax" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+                    <TextBlock Grid.Row="5" Grid.Column="3" Text="Park Min %" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="5" Grid.Column="4" x:Name="tbPsParkMin" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+                </Grid>
+
+                <!-- GamingMode Profile -->
+                <TextBlock Text="GamingMode Profile" FontSize="14" FontWeight="Bold"
+                           Foreground="{StaticResource RedBrush}" Margin="0,16,0,8"/>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="20"/>
+                        <ColumnDefinition Width="110"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="32"/>
+                        <RowDefinition Height="32"/>
+                        <RowDefinition Height="32"/>
+                        <RowDefinition Height="32"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Grid.Row="0" Grid.Column="0" Text="CPU Max %" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="0" Grid.Column="1" x:Name="tbGmCpuMax" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+                    <TextBlock Grid.Row="0" Grid.Column="3" Text="CPU Min %" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="0" Grid.Column="4" x:Name="tbGmCpuMin" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+
+                    <TextBlock Grid.Row="1" Grid.Column="0" Text="PPT (W)" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="1" Grid.Column="1" x:Name="tbGmPpt" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+                    <TextBlock Grid.Row="1" Grid.Column="3" Text="TDC (A)" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="1" Grid.Column="4" x:Name="tbGmTdc" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+
+                    <TextBlock Grid.Row="2" Grid.Column="0" Text="EDC (A)" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="2" Grid.Column="1" x:Name="tbGmEdc" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+                    <TextBlock Grid.Row="2" Grid.Column="3" Text="HTC (°C)" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="2" Grid.Column="4" x:Name="tbGmHtc" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Park Max %" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="3" Grid.Column="1" x:Name="tbGmParkMax" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+                    <TextBlock Grid.Row="3" Grid.Column="3" Text="Park Min %" Foreground="{StaticResource TextDimBrush}" VerticalAlignment="Center"/>
+                    <TextBox Grid.Row="3" Grid.Column="4" x:Name="tbGmParkMin" Margin="0,2" Background="#22FFFFFF" Foreground="White" BorderBrush="#44FFFFFF"/>
+                </Grid>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Bottom buttons -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button x:Name="btnCancel" Content="Cancel" Width="90" Height="36"
+                    Style="{StaticResource ProfileButton}" Background="#555555" Margin="0,0,10,0"/>
+            <Button x:Name="btnSave" Content="Save" Width="90" Height="36"
+                    Style="{StaticResource ProfileButton}" Background="{StaticResource BlueBrush}"/>
+        </StackPanel>
+    </Grid>
+</Window>

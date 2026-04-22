@@ -21,16 +21,23 @@
             <RowDefinition Height="Auto"/>   <!-- Status bar -->
         </Grid.RowDefinitions>
 
-        <!-- Title -->
-        <StackPanel Grid.Row="0" HorizontalAlignment="Center">
-            <TextBlock Text="AMD Power Profile Switcher"
-                       FontSize="22" FontWeight="Bold"
-                       Foreground="{StaticResource TextBrush}"
-                       HorizontalAlignment="Center"/>
-            <TextBlock Text="Ryzen 9 5900X  ·  RX 6900 XT"
-                       FontSize="12" Foreground="{StaticResource TextDimBrush}"
-                       HorizontalAlignment="Center" Margin="0,4,0,0"/>
-        </StackPanel>
+        <!-- Title + Settings gear -->
+        <Grid Grid.Row="0">
+            <StackPanel HorizontalAlignment="Center">
+                <TextBlock Text="AMD Power Profile Switcher"
+                           FontSize="22" FontWeight="Bold"
+                           Foreground="{StaticResource TextBrush}"
+                           HorizontalAlignment="Center"/>
+                <TextBlock x:Name="txtHardware" Text=""
+                           FontSize="12" Foreground="{StaticResource TextDimBrush}"
+                           HorizontalAlignment="Center" Margin="0,4,0,0"/>
+            </StackPanel>
+            <Button x:Name="btnSettings" Content="⚙" FontSize="20"
+                    HorizontalAlignment="Right" VerticalAlignment="Top"
+                    Background="Transparent" Foreground="{StaticResource TextDimBrush}"
+                    BorderThickness="0" Cursor="Hand" Padding="4,0"
+                    ToolTip="Settings"/>
+        </Grid>
 
         <!-- Live power display -->
         <Border Grid.Row="2" Background="{StaticResource CardBrush}"
@@ -64,12 +71,9 @@
                         <TextBlock Text="PowerSaver" FontSize="18" FontWeight="Bold"
                                    Foreground="{StaticResource TextBrush}"/>
                     </StackPanel>
-                    <TextBlock Text="CPU 99% · PPT 45W · GPU 1000MHz/825mV"
+                    <TextBlock x:Name="txtPsDetails" Text=""
                                FontSize="11" Foreground="{StaticResource TextDimBrush}"
                                Margin="18,4,0,0"/>
-                    <TextBlock Text="~91W idle · Saves ~55-75W"
-                               FontSize="11" Foreground="{StaticResource GreenBrush}"
-                               Margin="18,2,0,0"/>
                 </StackPanel>
                 <Button Grid.Column="1" x:Name="btnPowerSaver"
                         Content="APPLY" Style="{StaticResource ProfileButton}"
@@ -94,12 +98,9 @@
                         <TextBlock Text="GamingMode" FontSize="18" FontWeight="Bold"
                                    Foreground="{StaticResource TextBrush}"/>
                     </StackPanel>
-                    <TextBlock Text="CPU 100% boost · PPT 142W · GPU stock"
+                    <TextBlock x:Name="txtGmDetails" Text=""
                                FontSize="11" Foreground="{StaticResource TextDimBrush}"
                                Margin="18,4,0,0"/>
-                    <TextBlock Text="Full performance · 4.8GHz / 2514MHz"
-                               FontSize="11" Foreground="{StaticResource RedBrush}"
-                               Margin="18,2,0,0"/>
                 </StackPanel>
                 <Button Grid.Column="1" x:Name="btnGamingMode"
                         Content="APPLY" Style="{StaticResource ProfileButton}"

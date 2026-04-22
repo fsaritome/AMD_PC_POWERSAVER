@@ -6,6 +6,9 @@ GpuControl/*.o
 ProfileSwitcher/bin/
 ProfileSwitcher/obj/
 
+# Config with secrets (use config.example.json as template)
+config.json
+
 # IDE
 .vs/
 *.user
