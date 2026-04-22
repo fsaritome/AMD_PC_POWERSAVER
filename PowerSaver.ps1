@@ -2,12 +2,13 @@
 <#
 .SYNOPSIS
     POWER SAVER MODE - Max power savings for normal work (coding, browsing, etc.)
-    Estimated savings: ~55-65W from wall vs stock settings
+    Estimated savings: ~55-75W from wall vs stock settings
 .DESCRIPTION
     - Disables unused Intel X520-2 10GbE NICs (~31W savings)
     - Caps CPU to 99% (disables boost, ~15W savings)
     - Sets CPU min state to 5% (deeper idle)
     - SMU: PPT=45W, TDC=35A, EDC=50A, HTC=70C (firmware-level power cap)
+    - GPU: Max 1000MHz, 825mV, power limit -10% via ADLX (~14W savings)
     - Aggressive core parking (50% max cores)
     - PCIe ASPM to maximum power savings
     - USB selective suspend enabled
@@ -68,7 +69,18 @@ if (Test-Path $zenExe) {
     Write-Host "[SMU]   ZenControl not found at $zenExe - skipping SMU limits" -ForegroundColor Yellow
 }
 
-# --- 2c. Core parking: Aggressive (50% max cores) ---
+# --- 2c. GPU: Downclock + undervolt via GpuControl (ADLX) ---
+$gpuExe = "$PSScriptRoot\GpuControl\GpuControl.exe"
+if (Test-Path $gpuExe) {
+    Write-Host "[GPU]   Setting max 1000MHz, 825mV, power limit -10% via ADLX..." -ForegroundColor White
+    & $gpuExe powerlimit -10 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
+    & $gpuExe maxfreq 1000 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
+    & $gpuExe voltage 825 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
+} else {
+    Write-Host "[GPU]   GpuControl not found at $gpuExe - skipping GPU limits" -ForegroundColor Yellow
+}
+
+# --- 2d. Core parking: Aggressive (50% max cores) ---
 Write-Host "[PARK]  Setting aggressive core parking (50% max cores)..." -ForegroundColor White
 powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR CPMAXCORES 50
 powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR CPMINCORES 5

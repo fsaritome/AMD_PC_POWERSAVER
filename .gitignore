@@ -1,6 +1,8 @@
 # Build outputs
 ZenControl/bin/
 ZenControl/obj/
+GpuControl/*.exe
+GpuControl/*.o
 
 # IDE
 .vs/

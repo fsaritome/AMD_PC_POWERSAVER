@@ -1,15 +1,18 @@
 # AMD PC Power Analyzer & Optimizer
 
-> **From 152W to 86W idle — a 43% reduction in wall power, verified by hardware measurement.**
+> **From 152W to 91W idle — a 40% reduction in wall power, verified by hardware measurement.**
+> 
+> **With GPU tuning: down to 91W idle** (CPU + GPU combined optimization)
 
-A power analysis and optimization toolkit for AMD Ryzen desktop systems that goes beyond software estimation. This project combines **real-time hardware power measurement** via a NETIO smart power socket with **direct AMD SMU firmware control** to achieve aggressive, verifiable power savings without sacrificing usability.
+A power analysis and optimization toolkit for AMD Ryzen + Radeon desktop systems that goes beyond software estimation. This project combines **real-time hardware power measurement** via a NETIO smart power socket with **direct AMD SMU firmware control** (CPU) and **ADLX SDK control** (GPU) to achieve aggressive, verifiable power savings without sacrificing usability.
 
 ### What It Does
 
 - **Measures** actual wall power draw via NETIO 4KF smart socket JSON API
 - **Controls** CPU power limits (PPT/TDC/EDC/HTC) through direct SMU firmware commands
+- **Controls** GPU power limit, clocks, and voltage through AMD ADLX SDK
 - **Provides** one-click PowerSaver and GamingMode profiles with before/after verification
-- **Includes** a custom-built `ZenControl` CLI tool for bare-metal AMD SMU access via [ZenStates-Core](https://github.com/irusanov/ZenStates-Core)
+- **Includes** `ZenControl` (CPU SMU) and `GpuControl` (GPU ADLX) custom CLI tools
 
 ### Why Not Just Use RyzenAdj?
 
@@ -54,7 +57,8 @@ $r.Outputs[0] | Select-Object Name, Load, Current, PowerFactor
 | + ASPM max, HDD 3min, USB suspend | 97W | -8W | `powercfg` |
 | + Process cleanup | 99-101W | ±0 | Killed 78 non-essential processes |
 | + SMU PPT=30W ultralow | 92W | -5-8W | ZenControl via ZenStates-Core SMU |
-| **Best idle (PowerSaver)** | **~86-91W** | **-61-66W** | All combined |
+| + GPU downclock 1000MHz/825mV/-10% | 91W | -14W vs stock GPU | GpuControl via ADLX SDK |
+| **Best idle (PowerSaver)** | **~86-91W** | **-61-66W** | All combined (CPU+GPU) |
 
 ## Benchmark Results (12-thread CPU stress, NETIO measured)
 
@@ -79,12 +83,14 @@ Maximum power savings for normal work. Run as admin.
 - Disables X520-2 NICs (-31W)
 - CPU 99% max, 5% min (no boost)
 - SMU: PPT=45W, TDC=35A, EDC=50A, HTC=70°C
+- GPU: Max 1000MHz, 825mV, power limit -10% (via ADLX)
 - Core parking 50%, ASPM max, USB suspend, HDD 3min timeout
 
 ### GamingMode.ps1
 Maximum performance for gaming. Run as admin.
 - CPU 100% max+min (full boost to 4.8GHz, no parking)
 - SMU: PPT=142W, TDC=95A, EDC=140A, HTC=90°C (stock)
+- GPU: Reset to factory defaults (2514MHz, 1175mV, full boost)
 - ASPM off, USB suspend off, no timeouts
 - X520-2 stays disabled unless `-EnableX520` flag
 
@@ -111,6 +117,35 @@ cd ZenControl
 dotnet build -c Release
 ```
 Runtime deps in `bin/Release/net8.0-windows/`: `inpoutx64.dll`, `WinRing0x64.dll`, `WinRing0x64.sys` (copied from RyzenAdj).
+
+### GpuControl (C / GCC / ADLX SDK)
+Custom CLI tool built on [AMD ADLX SDK](https://github.com/GPUOpen-LibrariesAndSDKs/ADLX) v1.5.
+Controls GPU power, clocks, and voltage via the AMD driver's ADLX interface.
+
+```
+GpuControl.exe info          # GPU info, supported features, current values
+GpuControl.exe powerlimit -10 # Set power limit to -10% of TDP
+GpuControl.exe maxfreq 1000  # Cap GPU max frequency to 1000 MHz
+GpuControl.exe minfreq 500   # Set GPU min frequency to 500 MHz
+GpuControl.exe voltage 825   # Set GPU voltage to 825 mV (undervolt)
+GpuControl.exe powersave     # Apply power-saving preset
+GpuControl.exe default       # Reset GPU to factory defaults
+GpuControl.exe netio         # Read NETIO power socket
+```
+
+**Does NOT require admin.** Built from `GpuControl/` directory:
+```
+cd GpuControl
+gcc -O2 -o GpuControl.exe GpuControl.c %TEMP%\ADLX\SDK\ADLXHelper\Windows\C\ADLXHelper.c %TEMP%\ADLX\SDK\Platform\Windows\WinAPIs.c -I%TEMP%\ADLX -lole32
+```
+Requires AMD GPU driver (uses `amdadlx64.dll` from `C:\Windows\System32`).
+
+#### GPU Tuning Ranges (RX 6900 XT)
+| Parameter | Min | Stock | Max |
+|-----------|-----|-------|-----|
+| Power Limit | -10% | 0% | +15% |
+| GPU Frequency | 500 MHz | 2514 MHz | 3000 MHz |
+| GPU Voltage | 825 mV | 1175 mV | 1175 mV |
 
 ### read_sensors.py
 LibreHardwareMonitor sensor reader via pythonnet (.NET Framework).
@@ -145,6 +180,8 @@ Reads CPU/GPU power, temps, clocks. Requires admin for CPU power data.
 
 ## Dependencies
 - .NET 8 SDK (for building ZenControl)
+- GCC / MinGW-w64 (for building GpuControl) — `winget install BrechtSanders.WinLibs.POSIX.UCRT`
+- AMD ADLX SDK v1.5 (`git clone https://github.com/GPUOpen-LibrariesAndSDKs/ADLX`) — headers only, runtime uses driver's `amdadlx64.dll`
 - Python 3.12+ with `pythonnet`, `psutil` (for read_sensors.py)
 - LibreHardwareMonitor DLL at `%TEMP%\LHM`
 - ZenStates-Core v1.75 built at `%TEMP%\ZenStates-Core`
@@ -163,6 +200,7 @@ This project stands on the shoulders of these excellent open-source projects:
 | Project | Author | License | Used For |
 |---------|--------|---------|----------|
 | [ZenStates-Core](https://github.com/irusanov/ZenStates-Core) | [irusanov](https://github.com/irusanov) | GPL-3.0 | SMU firmware communication — the engine behind ZenControl |
+| [AMD ADLX SDK](https://github.com/GPUOpen-LibrariesAndSDKs/ADLX) | AMD / GPUOpen | AMD ADLX License | GPU tuning via driver API — the engine behind GpuControl |
 | [RyzenAdj](https://github.com/FlyGoat/RyzenAdj) | [FlyGoat](https://github.com/FlyGoat) | LGPL-3.0 | WinRing0 / inpoutx64 kernel driver binaries |
 | [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) | LibreHardwareMonitor team | MPL-2.0 | Hardware sensor reading (CPU/GPU temps, power, clocks) |
 | [pythonnet](https://github.com/pythonnet/pythonnet) | pythonnet contributors | MIT | .NET ↔ Python bridge for sensor reading |

@@ -8,6 +8,7 @@
     - CPU max state 100% (full Precision Boost to 4.8GHz)
     - CPU min state 100% (all cores stay at max - prevents frametime spikes)
     - SMU: Restores stock PPT=142W, TDC=95A, EDC=140A, HTC=90C
+    - GPU: Reset to factory defaults (full boost 2514MHz, 1175mV) via ADLX
     - Core parking disabled (all cores active)
     - PCIe ASPM off (no link power saving = lowest latency)
     - USB selective suspend disabled (no input device dropouts)
@@ -73,7 +74,16 @@ if (Test-Path $zenExe) {
     Write-Host "[SMU]   ZenControl not found at $zenExe - skipping SMU restore" -ForegroundColor Yellow
 }
 
-# --- 2c. Core parking: Disabled (all cores active) ---
+# --- 2c. GPU: Reset to factory defaults via GpuControl (ADLX) ---
+$gpuExe = "$PSScriptRoot\GpuControl\GpuControl.exe"
+if (Test-Path $gpuExe) {
+    Write-Host "[GPU]   Resetting GPU to factory defaults (full boost)..." -ForegroundColor White
+    & $gpuExe default 2>$null | ForEach-Object { Write-Host "        $_" -ForegroundColor DarkCyan }
+} else {
+    Write-Host "[GPU]   GpuControl not found at $gpuExe - skipping GPU reset" -ForegroundColor Yellow
+}
+
+# --- 2d. Core parking: Disabled (all cores active) ---
 Write-Host "[PARK]  Disabling core parking (all cores active)..." -ForegroundColor White
 powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR CPMAXCORES 100
 powercfg /setacvalueindex SCHEME_CURRENT SUB_PROCESSOR CPMINCORES 100
