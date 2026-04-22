@@ -147,6 +147,21 @@ Requires AMD GPU driver (uses `amdadlx64.dll` from `C:\Windows\System32`).
 | GPU Frequency | 500 MHz | 2514 MHz | 3000 MHz |
 | GPU Voltage | 825 mV | 1175 mV | 1175 mV |
 
+### ProfileSwitcher (C# / WPF / .NET 8)
+GUI app for switching between PowerSaver and GamingMode profiles.
+
+- Dark-themed WPF window with two big profile buttons
+- Live wall power display from NETIO 4KF (polls every 5s, color-coded)
+- Active profile indicator (green/red dot)
+- Launches PowerShell scripts elevated (UAC prompt) in background
+- Single-file 170KB exe (requires .NET 8 runtime)
+
+```
+cd ProfileSwitcher
+dotnet publish -c Release -r win-x64 --self-contained false -p:PublishSingleFile=true -o bin\publish
+# → bin\publish\ProfileSwitcher.exe
+```
+
 ### read_sensors.py
 LibreHardwareMonitor sensor reader via pythonnet (.NET Framework).
 Reads CPU/GPU power, temps, clocks. Requires admin for CPU power data.

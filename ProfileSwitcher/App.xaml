@@ -1,0 +1,53 @@
+<Application x:Class="ProfileSwitcher.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <!-- Dark theme colors -->
+        <Color x:Key="BgColor">#FF1A1A2E</Color>
+        <Color x:Key="CardColor">#FF16213E</Color>
+        <Color x:Key="AccentGreen">#FF00C853</Color>
+        <Color x:Key="AccentRed">#FFFF1744</Color>
+        <Color x:Key="AccentBlue">#FF448AFF</Color>
+        <Color x:Key="TextPrimary">#FFE0E0E0</Color>
+        <Color x:Key="TextSecondary">#FF9E9E9E</Color>
+
+        <SolidColorBrush x:Key="BgBrush" Color="{StaticResource BgColor}"/>
+        <SolidColorBrush x:Key="CardBrush" Color="{StaticResource CardColor}"/>
+        <SolidColorBrush x:Key="GreenBrush" Color="{StaticResource AccentGreen}"/>
+        <SolidColorBrush x:Key="RedBrush" Color="{StaticResource AccentRed}"/>
+        <SolidColorBrush x:Key="BlueBrush" Color="{StaticResource AccentBlue}"/>
+        <SolidColorBrush x:Key="TextBrush" Color="{StaticResource TextPrimary}"/>
+        <SolidColorBrush x:Key="TextDimBrush" Color="{StaticResource TextSecondary}"/>
+
+        <!-- Rounded button style -->
+        <Style x:Key="ProfileButton" TargetType="Button">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}"
+                                CornerRadius="8" Padding="20,14">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Opacity" Value="0.7"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="border" Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Application.Resources>
+</Application>

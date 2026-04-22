@@ -3,6 +3,8 @@ ZenControl/bin/
 ZenControl/obj/
 GpuControl/*.exe
 GpuControl/*.o
+ProfileSwitcher/bin/
+ProfileSwitcher/obj/
 
 # IDE
 .vs/
