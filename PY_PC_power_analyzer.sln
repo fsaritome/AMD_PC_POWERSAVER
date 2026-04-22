@@ -1,0 +1,30 @@
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.2.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProfileSwitcher", "ProfileSwitcher\ProfileSwitcher.csproj", "{57348C8B-F660-D793-6002-E99E58EFCD6D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ZenControl", "ZenControl\ZenControl.csproj", "{66146E6B-BBBC-59AD-FFC1-800D8AC44F54}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{57348C8B-F660-D793-6002-E99E58EFCD6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57348C8B-F660-D793-6002-E99E58EFCD6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57348C8B-F660-D793-6002-E99E58EFCD6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57348C8B-F660-D793-6002-E99E58EFCD6D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{66146E6B-BBBC-59AD-FFC1-800D8AC44F54}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{66146E6B-BBBC-59AD-FFC1-800D8AC44F54}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{66146E6B-BBBC-59AD-FFC1-800D8AC44F54}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{66146E6B-BBBC-59AD-FFC1-800D8AC44F54}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {15684E4A-AA57-44AD-8698-FBF2265E7299}
+	EndGlobalSection
+EndGlobal
