@@ -224,6 +224,25 @@ This project stands on the shoulders of these excellent open-source projects:
 
 Special thanks to [NETIO Products](https://www.netio-products.com/) for making smart power sockets with a sane JSON API.
 
+## ⚠ Disclaimer
+
+**USE AT YOUR OWN RISK.** This software modifies CPU and GPU firmware parameters (power limits, voltages, frequencies, thermal limits) and Windows power plan settings. Incorrect settings can cause:
+
+- **Hardware damage** — excessive voltage or power limits can permanently damage your CPU, GPU, or motherboard VRMs
+- **System instability** — crashes, data corruption, blue screens
+- **Overheating** — disabling or raising thermal limits can cause components to overheat
+- **Voided warranty** — modifying firmware power limits may void your manufacturer warranty
+
+The authors of this software:
+- Provide **NO WARRANTY** of any kind, express or implied
+- Accept **NO LIABILITY** for any damage to hardware, software, or data
+- Make **NO GUARANTEES** that settings are safe for your specific hardware
+- **DO NOT** endorse overclocking, overvolting, or exceeding manufacturer specifications
+
+**You are solely responsible** for verifying that any configuration values are safe for your specific hardware. Always start with conservative settings and test thoroughly. The built-in safety warnings are advisory only and do not guarantee protection against all dangerous configurations.
+
+This software is provided "AS IS" under the terms of the GPL-3.0 license. By using this software, you acknowledge that you understand these risks and accept full responsibility for any consequences.
+
 ## License
 
 This project is licensed under the **GNU General Public License v3.0** — see the [LICENSE](LICENSE) file for details.

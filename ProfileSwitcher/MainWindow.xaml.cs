@@ -31,8 +31,19 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
 
-        // Project directory = parent of ProfileSwitcher/
-        _projectDir = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, ".."));
+        // Project directory = find root by looking for PowerSaver.ps1
+        var dir = AppContext.BaseDirectory;
+        for (int i = 0; i < 5; i++)
+        {
+            var parent = Path.GetFullPath(Path.Combine(dir, ".."));
+            if (File.Exists(Path.Combine(parent, "PowerSaver.ps1")))
+            {
+                dir = parent;
+                break;
+            }
+            dir = parent;
+        }
+        _projectDir = dir;
         _configPath = Path.Combine(_projectDir, "config.json");
 
         LoadConfig();
@@ -144,6 +155,28 @@ public partial class MainWindow : Window
         if (!File.Exists(scriptPath))
         {
             SetStatus($"{scriptName} not found in {_projectDir}", RedBrush);
+            return;
+        }
+
+        // Build confirmation message with profile details
+        var profile = label == "PowerSaver" ? _config.Profiles.PowerSaver : _config.Profiles.GamingMode;
+        var details = $"Profile: {label}\n"
+            + $"CPU: {profile.CpuMax}% max, {profile.CpuMin}% min\n"
+            + $"SMU: PPT={profile.Ppt}W, TDC={profile.Tdc}A, EDC={profile.Edc}A, HTC={profile.Htc}°C\n";
+        if (label == "PowerSaver")
+            details += $"GPU: {profile.GpuMaxFreq}MHz, {profile.GpuVoltage}mV, power {profile.GpuPowerLimit}%\n";
+        else
+            details += "GPU: Reset to factory defaults\n";
+        details += $"Core Parking: {profile.CoreParkMax}% max, {profile.CoreParkMin}% min\n"
+            + "\n⚠ This will modify CPU/GPU firmware settings and Windows power plan.\n"
+            + "Incorrect values can cause instability or hardware damage.\n\n"
+            + "Proceed?";
+
+        var confirm = MessageBox.Show(details, $"Apply {label}?",
+            MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        if (confirm != MessageBoxResult.Yes)
+        {
+            SetStatus("Cancelled", TextDim);
             return;
         }
 
