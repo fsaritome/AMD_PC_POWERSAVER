@@ -1,7 +1,19 @@
-# PY_PC_power_analyzer
+# AMD PC Power Analyzer & Optimizer
 
-PC hardware power analysis & optimization toolkit for AMD Ryzen desktop systems.
-Measures real power via NETIO smart power socket and controls CPU power via direct AMD SMU firmware commands.
+> **From 152W to 86W idle — a 43% reduction in wall power, verified by hardware measurement.**
+
+A power analysis and optimization toolkit for AMD Ryzen desktop systems that goes beyond software estimation. This project combines **real-time hardware power measurement** via a NETIO smart power socket with **direct AMD SMU firmware control** to achieve aggressive, verifiable power savings without sacrificing usability.
+
+### What It Does
+
+- **Measures** actual wall power draw via NETIO 4KF smart socket JSON API
+- **Controls** CPU power limits (PPT/TDC/EDC/HTC) through direct SMU firmware commands
+- **Provides** one-click PowerSaver and GamingMode profiles with before/after verification
+- **Includes** a custom-built `ZenControl` CLI tool for bare-metal AMD SMU access via [ZenStates-Core](https://github.com/irusanov/ZenStates-Core)
+
+### Why Not Just Use RyzenAdj?
+
+RyzenAdj doesn't support desktop Zen 3 chips (Family 19h Model 33 = "unsupported"). This project builds a custom tool on ZenStates-Core v1.75 that talks directly to the SMU firmware via WinRing0, giving full control over power limits on chips RyzenAdj can't touch.
 
 ## Hardware Profile
 
@@ -143,3 +155,25 @@ Reads CPU/GPU power, temps, clocks. Requires admin for CPU power data.
 - Hyper-V enabled (vmcompute, vmms active, vEthernet Default Switch)
 - AMD Ryzen Master + RyzenMasterSDK installed
 - RyzenAdj does NOT support desktop Zen 3 (Fam19h model 33 = "unsupported")
+
+## Credits & Acknowledgments
+
+This project stands on the shoulders of these excellent open-source projects:
+
+| Project | Author | License | Used For |
+|---------|--------|---------|----------|
+| [ZenStates-Core](https://github.com/irusanov/ZenStates-Core) | [irusanov](https://github.com/irusanov) | GPL-3.0 | SMU firmware communication — the engine behind ZenControl |
+| [RyzenAdj](https://github.com/FlyGoat/RyzenAdj) | [FlyGoat](https://github.com/FlyGoat) | LGPL-3.0 | WinRing0 / inpoutx64 kernel driver binaries |
+| [LibreHardwareMonitor](https://github.com/LibreHardwareMonitor/LibreHardwareMonitor) | LibreHardwareMonitor team | MPL-2.0 | Hardware sensor reading (CPU/GPU temps, power, clocks) |
+| [pythonnet](https://github.com/pythonnet/pythonnet) | pythonnet contributors | MIT | .NET ↔ Python bridge for sensor reading |
+| [psutil](https://github.com/giampaolo/psutil) | [Giampaolo Rodola](https://github.com/giampaolo) | BSD-3-Clause | System/process monitoring |
+| [WinRing0](https://github.com/GermanAizek/WinRing0) | Noriyuki MIYAZAKI / CoolerMaster | BSD-like | Low-level hardware access (ring-0 I/O) |
+
+Special thanks to [NETIO Products](https://www.netio-products.com/) for making smart power sockets with a sane JSON API.
+
+## License
+
+This project is licensed under the **GNU General Public License v3.0** — see the [LICENSE](LICENSE) file for details.
+
+GPL-3.0 is required because ZenControl links against [ZenStates-Core](https://github.com/irusanov/ZenStates-Core) (GPL-3.0).
+You are free to use, modify, and redistribute this software under the terms of the GPL-3.0.
